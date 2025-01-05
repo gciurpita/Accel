@@ -1,6 +1,6 @@
 // Dejan, https://howtomechatronics.com
 
-const char *Version = "Accel - 250103c";
+const char *Version = "Accel - 250103d";
 
 #include <Wire.h>
 #include "SH1106Wire.h"
@@ -76,33 +76,7 @@ dispSplit (
 }
 
 // -----------------------------------------------------------------------------
-void direct (
-    int adr,
-    int y,
-    int x0,
-    int x1 )
-{
-    Wire.beginTransmission (MPU);
-    Wire.write (adr);
-    Wire.endTransmission (false);
-
-    Wire.requestFrom (MPU, 2);
-
-    for (int n = 0; n < Nreg; n++)  {
-        regLst [n] = reg [n];
-        reg    [n] = Wire.read ();
-    }
-
-    dispSplit (0, y, x0, x1);
-
-#if 0
-    sprintf (s, "dir: %2d, %2d, %2d, %2d", adr, y, x0, x1);
-    Serial.println (s);
-#endif
-}
-
-// -----------------------------------------------------------------------------
-void all ()
+void regRead ()
 {
     Wire.beginTransmission (MPU);
     Wire.write (AddrAccX);
@@ -114,6 +88,64 @@ void all ()
         regLst [n] = reg [n];
         reg    [n] = Wire.read ();
     }
+}
+
+// ---------------------------------------------------------
+int
+getMag (
+    int idx)
+{
+    return abs (((reg [idx] << 8) + reg [idx+1]) - regLst [idx]);
+}
+
+// -----------------------------------------------------------------------------
+const int IdxGyroX =  8;
+const int IdxGyroY = 10;
+
+float gyroX;
+float gyroY;
+float delta;
+
+void car ()
+{
+    regRead ();
+
+    display.clear ();
+
+    // ---------------------------
+    // x-axis
+    delta = getMag (IdxGyroX) - gyroX;
+    if (0 < delta)
+        gyroX += delta / (1 << 6);
+    else
+        gyroX += delta / (1 << 8);
+
+    sprintf (s, " %3d", (int)gyroX);
+    display.drawString (0, Y1, s);
+
+    digitalWrite (PinLedA, 400 < gyroX);
+
+    // ---------------------------
+    // y-axis
+    delta = getMag (IdxGyroY) - gyroY;
+    if (0 < delta)
+        gyroY += delta / (1 << 6);
+    else
+        gyroY += delta / (1 << 8);
+
+    sprintf (s, " %3d", (int)gyroY);
+    display.drawString (0, Y2, s);
+
+    digitalWrite (PinLedB, 400 < gyroY);
+
+    // ---------------------------
+    display.display ();
+}
+
+// -----------------------------------------------------------------------------
+void all ()
+{
+    regRead ();
 
     display.clear();
     sprintf (s, "Accel - %s", Version); 
@@ -140,53 +172,12 @@ void all ()
 }
 
 // -----------------------------------------------------------------------------
-int cnt;
-void separate ()
-{
-    display.clear();
-
- // switch ((++cnt/30) % 6)  {
-    switch (2)  {
-    case 0:
-        direct (59, Y1,  0, 32);
-        break;
-
-    case 1:
-        direct (61, Y2,  0, 32);
-        break;
-
-    case 2:
-        direct (63, Y3,  0, 32);
-        break;
-
-    case 3:
-        direct (67, Y1, 64, 96);
-        break;
-
-    case 4:
-        direct (69, Y2, 64, 96);
-        break;
-
-    case 5:
-        direct (71, Y3, 64, 96);
-        break;
-    }
-    display.display();
-
-    delay (100);
-}
-
-// -----------------------------------------------------------------------------
 void loop ()
 {
-#if 1
+#if 0
     all ();
-#elif 1
-    separate ();
 #else
-    display.clear();
-    direct (AddrAccZ, Y2, 64, 96);
-    display.display();
+    car ();
 #endif
 
     // ---------------------------
@@ -241,19 +232,10 @@ void setup () {
     pinMode (PinLedA, OUTPUT);
     pinMode (PinLedB, OUTPUT);
 
-#if 0
     for (int n =0; n < 4; n++)  {
-        display.clear();
-        sprintf (s, " led %d", n);
-        display.drawString (0, Y0, s);
-        display.display();
-
         pinMode (PinLeds [n], OUTPUT);
-        digitalWrite  (PinLeds [n], HIGH);
-        delay (1000);
-        digitalWrite  (PinLeds [n], LOW);
+        digitalWrite (PinLeds [n], HIGH);   // off
     }
-#endif
 
     // -------------------------------------
     Wire.begin ();
