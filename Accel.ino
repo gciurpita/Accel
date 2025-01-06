@@ -1,6 +1,6 @@
 // Dejan, https://howtomechatronics.com
 
-const char *Version = "Accel - 250103d";
+const char *Version = "Accel - 250105b";
 
 #include <Wire.h>
 #include "SH1106Wire.h"
@@ -172,12 +172,27 @@ void all ()
 }
 
 // -----------------------------------------------------------------------------
+void dump ()
+{
+    regRead ();
+
+    for (int n = 0; n < Nreg; n += 2)  {
+        int16_t val = (reg  [n] << 8) + reg  [n];
+        sprintf (s, " %6d", val);
+        Serial.print (s);
+    }
+    Serial.println ();
+}
+
+// -----------------------------------------------------------------------------
 void loop ()
 {
 #if 0
     all ();
-#else
+#elif 0
     car ();
+#elif 1
+    dump ();
 #endif
 
     // ---------------------------
@@ -211,7 +226,8 @@ void loop ()
 
 // -----------------------------------------------------------------------------
 void setup () {
-    Serial.begin (19200);
+    Serial.begin (115200);
+    Serial.println (Version);
 
     // -------------------------------------
     // init OLED display
