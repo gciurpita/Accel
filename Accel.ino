@@ -1,6 +1,6 @@
 // Dejan, https://howtomechatronics.com
 
-const char *Version = "Accel - 250105b";
+const char *Version = "Accel - 250105c";
 
 #include <Wire.h>
 #include "SH1106Wire.h"
@@ -172,16 +172,32 @@ void all ()
 }
 
 // -----------------------------------------------------------------------------
+int16_t bias   [Nreg];
+int16_t offset [Nreg] =
+    { -30000, 0, -20000, 0, -10000, 0, 0, 0, 10000, 0, 20000, 0, 30000 };
+
 void dump ()
 {
     regRead ();
 
     for (int n = 0; n < Nreg; n += 2)  {
-        int16_t val = (reg  [n] << 8) + reg  [n];
-        sprintf (s, " %6d", val);
+        int16_t val = (reg  [n] << 8) + reg  [n+1];
+        sprintf (s, " %6d", val - bias [n] + offset [n]);
         Serial.print (s);
     }
     Serial.println ();
+}
+
+// -----------------------------------------------------------------------------
+int idx = -1;
+void path ()
+{
+    regRead ();
+
+    int16_t val = (reg  [idx] << 8) + reg  [idx];
+
+    sprintf (s, " %6d", val);
+    Serial.println (s);
 }
 
 // -----------------------------------------------------------------------------
@@ -192,7 +208,10 @@ void loop ()
 #elif 0
     car ();
 #elif 1
-    dump ();
+    if (0 > idx)
+        dump ();
+    else
+        path ();
 #endif
 
     // ---------------------------
@@ -215,6 +234,10 @@ void loop ()
             printf ("loop: pinMode (%d, OUTPUT)\n", val);
             break;
 
+        case 'p':
+            idx = val;
+            break;
+
         case 's':
             digitalWrite (val, HIGH);
             break;
@@ -222,6 +245,8 @@ void loop ()
         }
         val = 0;
     }
+
+    delay (100);
 }
 
 // -----------------------------------------------------------------------------
@@ -260,6 +285,11 @@ void setup () {
     Wire.write (0x6B);                  // perform reset w/ reg 0x6b
     Wire.write (0x00);
     Wire.endTransmission (true);
+
+    // -------------------------------------
+    regRead ();
+    for (int n = 0; n < Nreg; n += 2)
+        bias [n] = (reg  [n] << 8) + reg  [n+1];
 
     delay (20);
 }
