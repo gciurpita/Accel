@@ -1,13 +1,13 @@
-const char *version = "Broadcast UDP - 250110a";
+const char *version = "Accel/Broadcast UDP - 250110b";
 
 #include "eeprom.h"
 #include "gyro.h"
 #include "wifi.h"
 
 unsigned debug   = 1;
-int   error   = 0;
-int   ledMode = 0;
-char  s [100];
+bool     run     = true;
+int      ledMode = 0;
+char     s [90];
 
 unsigned long msec;
 
@@ -81,6 +81,8 @@ void cmds ()
                     printf (" %s: %2d  %s\n", __func__, n, _toks [n]);
             }
         }
+        else if ('r' == buf [0])
+            run = ! run;
         else if ('U' == buf [0])
             eepromUpdate ();
         else
@@ -89,18 +91,23 @@ void cmds ()
 }
 
 // -----------------------------------------------------------------------------
+const unsigned long MsecGyroPeriod = 100;
+      unsigned long msecGyro;
+
 void
 loop ()
 {
     msec = millis ();
     ledStatus ();
 
-    gyro (s);
-    Serial.println (s);
-
     wifiMonitor ();
-
     cmds ();
+
+    if (run && msec - msecGyro >= MsecGyroPeriod) {
+        msecGyro += MsecGyroPeriod;
+        gyro (s);
+        wifiSend       (s);
+    }
 }
 
 // -----------------------------------------------------------------------------
