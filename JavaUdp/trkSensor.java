@@ -17,17 +17,85 @@ import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import javax.imageio.ImageIO;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+
 // -----------------------------------------------------------------------------
 // steam locomotive backend
 
 public class trkSensor extends JPanel
-        implements MouseListener, KeyListener
+        implements MouseListener, KeyListener, Runnable
 {
+    // ----------------------------------------------------
     public static void main (String [] args)
             throws IOException, IllegalArgumentException
     {
         trkSensor ts = new trkSensor ();
-        ts.startup ();
+        System.out.println (" main: trkSensor return");
+
+		// Create a socket to listen on port 4445
+		DatagramSocket ds      = new DatagramSocket (4445);
+		byte []        receive = new byte[65535];
+
+        System.out.println (" main: loop");
+
+		DatagramPacket DpReceive = null;
+		while (true)
+		{
+			// Step 2 : create a DatgramPacket to receive the data.
+			DpReceive = new DatagramPacket (receive, receive.length);
+
+			// Step 3 : revieve the data in byte buffer.
+			ds.receive (DpReceive);
+
+			System.out.println ("Client:-" + data(receive));
+
+			// Exit the server if the client sends "bye"
+			if (data(receive).toString().equals("bye"))
+			{
+				System.out.println ("Client sent bye.....EXITING");
+				break;
+			}
+
+			// Clear the buffer after every message.
+			receive = new byte[65535];
+		}
+
+        System.out.println (" main: done");
+	}
+
+    // ----------------------------------------------------
+	// A utility method to convert the byte array
+	// data into a string representation.
+	public static StringBuilder data(byte[] a)
+	{
+		if (a == null)
+			return null;
+		StringBuilder ret = new StringBuilder();
+		int i = 0;
+		while (a[i] != 0)
+		{
+			ret.append((char) a[i]);
+			i++;
+		}
+		return ret;
+	}
+    // ----------------------------------------------------
+    int cnt;
+
+    public void run () {
+        TimerTask task = new TimerTask() {
+            public void run() {
+                System.out.println (cnt++);
+            }
+        };
+
+        Timer timer = new Timer("runTimer");
+        timer.scheduleAtFixedRate (task, 0, 1000);
+
     }
 
     // ----------------------------------------------------
@@ -144,11 +212,6 @@ public class trkSensor extends JPanel
         addMouseListener (this);
 
         System.out.println ("trkSensor:");
-    }
-
-    // ----------------------------------------------------
-    private void startup ()
-    {
         frame.setContentPane (this);
 
         this.setPreferredSize (new Dimension (Wid, Ht));
@@ -176,12 +239,14 @@ public class trkSensor extends JPanel
 
         int A = -50;
         for (int n = 0; n < Wid; n++)  {
-            double ang   = 2 * Math.PI * n / Wid; 
+            double ang   = 2 * Math.PI * n / Wid;
             vecA [n] = (int) (A * Math.cos ( 4 * ang));
             vecB [n] = (int) (A * Math.cos ( 8 * ang));
             vecC [n] = (int) (A * Math.cos (12 * ang));
             vecD [n] = vecA [n] + vecB [n] + vecC [n];
         }
+
+        System.out.println (" trkSensor: done");
     }
 
     // ----------------------------------------------------
