@@ -47,6 +47,14 @@ public class trkSensor extends JPanel
     int       vecE []      = new int [Wid];
     int       vecF []      = new int [Wid];
 
+    int       offA;
+    int       offB;
+    int       offC;
+
+    int       offD;
+    int       offE;
+    int       offF;
+
     int       SegLen []    = { Wid/3, Wid/3, Wid/8 };
     int       x            = Wid / 2;
     int       y            = Ht / 2;
@@ -65,20 +73,20 @@ public class trkSensor extends JPanel
     // ----------------------------------------------------
     public void udpRec () throws IOException
     {
-		// Create a socket to listen on port 4445
-		DatagramSocket ds      = new DatagramSocket (4445);
-		byte []        receive = new byte[65535];
+        // Create a socket to listen on port 4445
+        DatagramSocket ds      = new DatagramSocket (4445);
+        byte []        receive = new byte[65535];
 
         System.out.println (" main: loop");
 
-		DatagramPacket DpReceive = null;
-		while (true)
-		{
-			// Step 2 : create a DatgramPacket to receive the data.
-			DpReceive = new DatagramPacket (receive, receive.length);
+        DatagramPacket DpReceive = null;
+        while (true)
+        {
+            // Step 2 : create a DatgramPacket to receive the data.
+            DpReceive = new DatagramPacket (receive, receive.length);
 
-			// Step 3 : revieve the data in byte buffer.
-			ds.receive (DpReceive);
+            // Step 3 : revieve the data in byte buffer.
+            ds.receive (DpReceive);
 
             // convert bytes to String
             String s = "";
@@ -88,9 +96,8 @@ public class trkSensor extends JPanel
             // split and translate fields
             String []  fld = s.split("  *");
 
-            if (false)  {
-			    System.out.println ("Client: " + s);
-                System.out.println (fld.length);
+            if (true)  {
+                System.out.println ("udpRec: " + s);
             }
 
          // int  accX = Integer.parseInt (fld [1]);
@@ -102,36 +109,70 @@ public class trkSensor extends JPanel
 
                 int i = idx % Wid;
 
+                if (0 == idx)  {
+                    switch (n)  {
+                    case 1:
+                        offA = Integer.parseInt (fld [n]);
+                        break;
+    
+                    case 2:
+                        offB = Integer.parseInt (fld [n]);
+                        break;
+    
+                    case 3:
+                        offC = Integer.parseInt (fld [n]);
+                        break;
+    
+                    case 4:
+                        offD = Integer.parseInt (fld [n]);
+                        break;
+    
+                    case 5:
+                        offE = Integer.parseInt (fld [n]);
+                        break;
+    
+                    case 6:
+                        offF = Integer.parseInt (fld [n]);
+                        break;
+                    }
+                }
+
+                int K = 20;
+
                 switch (n)  {
                 case 1:
-                    vecA [i] =  Integer.parseInt (fld [n]);
+                    vecA [i] = (Integer.parseInt (fld [n]) - offA) / K;
                     break;
 
                 case 2:
-                    vecB [i] =  Integer.parseInt (fld [n]);
+                    vecB [i] = (Integer.parseInt (fld [n]) - offB) / K;
                     break;
 
                 case 3:
-                    vecC [i] =  Integer.parseInt (fld [n]);
+                    vecC [i] = (Integer.parseInt (fld [n]) - offC) / K;
                     break;
 
                 case 4:
-                    vecD [i] =  Integer.parseInt (fld [n]);
+                    vecD [i] = (Integer.parseInt (fld [n]) - offD) / K;
                     break;
 
                 case 5:
-                    vecE [i] =  Integer.parseInt (fld [n]);
+                    vecE [i] = (Integer.parseInt (fld [n]) - offE) / K;
                     break;
 
                 case 6:
-                    vecF [i] =  Integer.parseInt (fld [n]);
+                    vecF [i] = (Integer.parseInt (fld [n]) - offF) / K;
                     break;
                 }
             }
 
+            if (0 == idx)
+                    System.out.format ("offset: %6d %6d %6d %6d %6d %6d\n",
+                            offA, offB, offC, offD, offE, offF);
+
             idx++;
-		}
-	}
+        }
+    }
 
     // ----------------------------------------------------
     int cnt;
@@ -182,13 +223,15 @@ public class trkSensor extends JPanel
         Timer timer = new Timer("Timer");
         timer.scheduleAtFixedRate (task, 0, 2);
 
-        int A = -50;
-        for (int n = 0; n < Wid; n++)  {
-            double ang   = 2 * Math.PI * n / Wid;
-            vecA [n] = (int) (A * Math.cos ( 4 * ang));
-            vecB [n] = (int) (A * Math.cos ( 8 * ang));
-            vecC [n] = (int) (A * Math.cos (12 * ang));
-            vecD [n] = vecA [n] + vecB [n] + vecC [n];
+        if (false)  {
+            int A = -50;
+            for (int n = 0; n < Wid; n++)  {
+                double ang   = 2 * Math.PI * n / Wid;
+                vecA [n] = (int) (A * Math.cos ( 4 * ang));
+                vecB [n] = (int) (A * Math.cos ( 8 * ang));
+                vecC [n] = (int) (A * Math.cos (12 * ang));
+                vecD [n] = vecA [n] + vecB [n] + vecC [n];
+            }
         }
 
         System.out.println (" trkSensor: done");
@@ -346,18 +389,25 @@ public class trkSensor extends JPanel
         Graphics2D g2d,
         int        ang0 )
     {
-        int N = tics;
-        if (Wid <= tics)
+        if (0 == idx)
+            return;
+
+        int N = idx;
+        if (Wid <= idx)
             N = Wid;
-        int n = tics % N;   // endpt
+        int n = idx % N;   // endpt
 
         if (false)
             System.out.format (
             "paintWaves: %6d %6d, %6d %6d\n", tics, N, n, tics - n);
 
         paintVec (g2d, 100, vecA, n, N, Color.red);
+        paintVec (g2d, 200, vecD, n, N, Color.green);
+
         paintVec (g2d, 300, vecB, n, N, Color.blue);
-        paintVec (g2d, 500, vecE, n, N, Color.orange);
-        paintVec (g2d, 700, vecD, n, N, Color.green);
+        paintVec (g2d, 400, vecE, n, N, Color.yellow);
+
+        paintVec (g2d, 500, vecC, n, N, Color.orange);
+        paintVec (g2d, 600, vecF, n, N, Color.cyan);
     }
 }
