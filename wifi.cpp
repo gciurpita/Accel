@@ -12,7 +12,7 @@
 
 extern unsigned long msec;
 
-int dbgWifi = 1;
+int dbgWifi = 0;
 
 static void _wifiScan (void);
 static void _wifiMsg  (const char *msg);
@@ -28,8 +28,6 @@ char pass [STR_SIZE] = "";
 static int  port  = 4445;
 
 // ---------------------------------------------------------
-enum { ST_NUL, ST_INIT, ST_CHK, ST_CFG_UDP, ST_UP, ST_ERROR };
-
 const char *wifiStStr [] = {
     "ST_NUL",
     "ST_INIT",
@@ -209,7 +207,7 @@ wifiSend (
 }
 
 // -------------------------------------
-void
+int
 wifiMonitor (void)
 {
     if (stateLst != state)
@@ -252,4 +250,6 @@ wifiMonitor (void)
     default:
         break;
     }
+
+    return state;
 }

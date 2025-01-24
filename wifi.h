@@ -3,6 +3,8 @@
 
 extern int  dbgWifi;
 
+enum { ST_NUL, ST_INIT, ST_CHK, ST_CFG_UDP, ST_UP, ST_ERROR };
+
 const unsigned STR_SIZE = 40;
 
 extern char host [STR_SIZE];
@@ -16,7 +18,7 @@ void  wifiIpAdd   (char *ip);
 void  wifiIpClr   (void);
 char *wifiIpGet   (int idx);
 void  wifiIpList  (void);
-void  wifiMonitor (void);
+int   wifiMonitor (void);
 void  wifiReceive (void);
 void  wifiReset   (void);
 void  wifiSend    (const char* s);

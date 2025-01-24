@@ -1,4 +1,4 @@
-const char *version = "Accel/Broadcast UDP - 250121a";
+const char *version = "Accel/Broadcast UDP - 250124a";
 
 #include "eeprom.h"
 #include "gyro.h"
@@ -12,26 +12,38 @@ char     s [90];
 unsigned long msec;
 
 // -----------------------------------------------------------------------------
-const byte PinLedGrn = 17;      // ezsbc, 16/17/18 red/grn/blu
+const byte PinLed1Red = 16;
+const byte PinLed1Grn = 17;
+const byte PinLed1Blu = 18;
+const byte PinLed2Blu = 19;
 
-struct LedPeriod {
+enum { LedOff = HIGH, LedOn= LOW };
+
+struct LedState {
     unsigned long   period [2];
+    byte            pinLed;
+}
+ledStates [] = {
+    {{  400,  100 }, PinLed1Blu },
+    {{  100, 1900 }, PinLed1Grn },
+    {{  150,  100 }, PinLed1Red },
 };
-LedPeriod ledPeriod [] = {
-    {  100, 1900 },
-    {  200,   50 },
-    {  150,  100 },
-};
+const int NledStates = sizeof(ledStates)/sizeof(LedState);
 
 // -------------------------------------
 void
 ledStatus ()
 {
     static unsigned long msecLst;
-    int state = digitalRead (PinLedGrn);
-    if (msec - msecLst >= ledPeriod [ledMode].period [state])  {
+
+    int state = digitalRead (ledStates [ledMode].pinLed);
+    if (msec - msecLst >= ledStates [ledMode].period [state])  {
         msecLst = msec;
-        digitalWrite (PinLedGrn, ! state);
+        digitalWrite (ledStates [ledMode].pinLed, ! state);
+#if 0
+        Serial.print   ("ledStatus: ");
+        Serial.println (ledMode);
+#endif
     }
 }
 
@@ -91,7 +103,7 @@ void cmds ()
 }
 
 // -----------------------------------------------------------------------------
-const unsigned long MsecGyroPeriod = 100;
+const unsigned long MsecGyroPeriod = 10;
       unsigned long msecGyro;
 
 void
@@ -100,7 +112,9 @@ loop ()
     msec = millis ();
     ledStatus ();
 
-    wifiMonitor ();
+    if (ST_UP == wifiMonitor ())
+        ledMode = 1;
+
     cmds ();
 
     if (run && msec - msecGyro >= MsecGyroPeriod) {
@@ -117,8 +131,10 @@ void setup ()
     delay (500);
     Serial.println (version);
 
-    pinMode (PinLedGrn, OUTPUT);
-    digitalWrite (PinLedGrn, LOW);
+    for (int n = 0; n < NledStates; n++)  {
+        pinMode      (ledStates [n].pinLed, OUTPUT);
+        digitalWrite (ledStates [n].pinLed, LedOff);
+    }
 
     eepromInit ();
     gyroInit   ();
