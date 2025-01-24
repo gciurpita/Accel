@@ -3,6 +3,11 @@
 #include <Wire.h>
 #include "gyro.h"
 
+// ezsbc Vin max 8V
+// ezsbc draws 240ma when using WiFi
+// ezsbc pin 21 - SDA
+// ezsbc pin 21 - SCL
+
 // -----------------------------------------------------------------------------
 const int  MPU      = 0x68; // MPU6050 I2C address
 const int  AddrAccX = 59;       // first 6

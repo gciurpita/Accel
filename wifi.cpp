@@ -43,6 +43,23 @@ int state    = ST_NUL;
 int stateLst = ST_NUL;
 
 // -------------------------------------
+// configure as Access Pt
+static void
+_wifiAP (void)
+{
+    printf (" %s:\n", __func__);
+
+    const char *ssid = "esp-greg";
+    WiFi.softAP (ssid);
+    IPAddress myIP = WiFi.softAPIP ();
+
+    Serial.print (" AP ssid ");
+    Serial.print (ssid);
+    Serial.print (", IP ");
+    Serial.println (myIP);
+}
+
+// -------------------------------------
 static bool
 _wifiCheck (void)
 {
@@ -85,10 +102,13 @@ _wifiCfgUdp (void)
 
     if (udp.listen (port)) {
         Serial.print ("  UDP Listening on IP: ");
-        Serial.println (WiFi.localIP ());
+        Serial.print   (WiFi.localIP ());
+        Serial.print   (", port ");
+        Serial.println (port);
 
         udp.onPacket ([] (AsyncUDPPacket packet) {
-#if 0
+#undef AP
+#ifndef AP
             Serial.print   ("UDP Packet Type: ");
             Serial.println (packet.isBroadcast ()
                         ? "Broadcast"
@@ -198,7 +218,11 @@ wifiMonitor (void)
 
     switch (state)  {
     case ST_NUL:
-        if (ssid [0])
+        if (! strcmp (host, "AP"))  {
+            _wifiAP ();
+            state = ST_CFG_UDP;
+        }
+        else if (ssid [0])
             state = ST_INIT;
         else {
             printf ("%s: no SSID\n", __func__);

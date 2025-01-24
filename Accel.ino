@@ -1,4 +1,4 @@
-const char *version = "Accel/Broadcast UDP - 250110b";
+const char *version = "Accel/Broadcast UDP - 250121a";
 
 #include "eeprom.h"
 #include "gyro.h"
